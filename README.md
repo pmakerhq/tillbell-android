@@ -57,7 +57,7 @@ Then, in your app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.pmaker:tillbell:0.1.2")
+    implementation("com.pmaker:tillbell:0.1.3")
 }
 ```
 
