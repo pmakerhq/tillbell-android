@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/manage.request.json",
+  "title": "manage (page to native)",
+  "description": "Opens the Play Store subscription page (https://play.google.com/store/account/subscriptions, with sku and package when productId is set). No reply.",
+  "type": "object",
+  "required": [
+    "productId"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "productId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Added by @hotwired/hotwire-native-bridge to every message sent by the page.",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

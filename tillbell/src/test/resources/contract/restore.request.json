@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/restore.request.json",
+  "title": "restore (page to native)",
+  "description": "Asks the native app for the subscriptions Google Play reports for the device's Google account (queryPurchasesAsync).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Added by @hotwired/hotwire-native-bridge to every message sent by the page.",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

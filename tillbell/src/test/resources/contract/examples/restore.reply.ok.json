@@ -1,0 +1,9 @@
+{
+  "result": "ok",
+  "purchases": [
+    {
+      "productId": "premium",
+      "purchaseToken": "purchase-token"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/products.reply.json",
+  "title": "products (native to page)",
+  "description": "Plans known to Google Play, with the price formatted for the customer's locale. Plans missing from the list cannot be bought.",
+  "type": "object",
+  "required": [
+    "result"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "enum": [
+        "ok",
+        "unavailable",
+        "error"
+      ],
+      "description": "unavailable: Google Play billing cannot be used on this device."
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "productId",
+          "basePlanId",
+          "formattedPrice"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "productId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Google Play product id (subscription id)."
+          },
+          "basePlanId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Google Play base plan id, or null for the product's only base plan."
+          },
+          "formattedPrice": {
+            "type": "string",
+            "minLength": 1,
+            "description": "ProductDetails formattedPrice of the base plan's regular pricing phase, e.g. \"\u20ac4.99\"."
+          }
+        }
+      }
+    },
+    "message": {
+      "type": "string",
+      "description": "Developer-facing detail, never shown to the customer."
+    }
+  },
+  "if": {
+    "properties": {
+      "result": {
+        "const": "ok"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "products"
+    ]
+  }
+}

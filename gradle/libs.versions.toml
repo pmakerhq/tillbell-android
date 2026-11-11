@@ -1,0 +1,34 @@
+[versions]
+# Android Gradle Plugin 9 compiles Kotlin itself (built-in Kotlin), so there is no Kotlin Android plugin.
+agp = "9.5.1"
+# Kotlin Gradle Plugin version used by the built-in Kotlin support and the serialization plugin.
+kotlin = "2.4.21"
+# Hotwire Native Android. Its core artifact sets the minimum SDK of this library (28).
+hotwire = "1.4.1"
+# Google Play Billing Library.
+billing = "9.1.0"
+coroutines = "1.11.0"
+kotlinxSerialization = "1.12.0"
+ktlintGradle = "14.2.0"
+junit = "4.13.2"
+# Real org.json implementation for unit tests: Play Billing parses ProductDetails and Purchase with it.
+orgJson = "20260814"
+jsonSchemaValidator = "3.0.9"
+androidxTestRunner = "1.7.0"
+
+[libraries]
+hotwire-core = { group = "dev.hotwire", name = "core", version.ref = "hotwire" }
+hotwire-navigation-fragments = { group = "dev.hotwire", name = "navigation-fragments", version.ref = "hotwire" }
+play-billing = { group = "com.android.billingclient", name = "billing", version.ref = "billing" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
+json-schema-validator = { group = "com.networknt", name = "json-schema-validator", version.ref = "jsonSchemaValidator" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+
+[plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }

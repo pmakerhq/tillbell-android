@@ -1,0 +1,15 @@
+{
+  "products": [
+    {
+      "productId": "premium",
+      "basePlanId": "monthly"
+    },
+    {
+      "productId": "premium",
+      "basePlanId": "yearly"
+    }
+  ],
+  "metadata": {
+    "url": "https://example.com/paywall"
+  }
+}

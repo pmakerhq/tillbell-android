@@ -1,0 +1,25 @@
+name: Release
+
+# Pushing a tag vX.Y.Z publishes com.pmaker:tillbell:X.Y.Z to GitHub Packages.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      # Never publish a version that does not pass the same checks as CI.
+      - run: ./gradlew build test
+      - run: ./gradlew publish -PreleaseVersion="${GITHUB_REF_NAME#v}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

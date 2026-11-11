@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/restore.reply.json",
+  "title": "restore (native to page)",
+  "description": "Subscription purchases of the device's Google account. The page posts each token to the server.",
+  "type": "object",
+  "required": [
+    "result"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "enum": [
+        "ok",
+        "unavailable",
+        "error"
+      ]
+    },
+    "purchases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "productId",
+          "purchaseToken"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "productId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Google Play product id (subscription id)."
+          },
+          "purchaseToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "message": {
+      "type": "string",
+      "description": "Developer-facing detail, never shown to the customer."
+    }
+  },
+  "if": {
+    "properties": {
+      "result": {
+        "const": "ok"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "purchases"
+    ]
+  }
+}

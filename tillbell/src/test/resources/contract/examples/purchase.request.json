@@ -1,0 +1,8 @@
+{
+  "productId": "premium",
+  "basePlanId": "monthly",
+  "obfuscatedAccountId": "6f1c2a8e-3b7d-4e59-9a0c-2d4f8b1e7c35",
+  "metadata": {
+    "url": "https://example.com/paywall"
+  }
+}

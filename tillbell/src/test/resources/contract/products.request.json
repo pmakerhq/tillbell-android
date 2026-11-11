@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/products.request.json",
+  "title": "products (page to native)",
+  "description": "Asks the native app for the localized price of each plan shown by the paywall.",
+  "type": "object",
+  "required": [
+    "products"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "productId",
+          "basePlanId"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "productId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Google Play product id (subscription id)."
+          },
+          "basePlanId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Google Play base plan id, or null for the product's only base plan."
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Added by @hotwired/hotwire-native-bridge to every message sent by the page.",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

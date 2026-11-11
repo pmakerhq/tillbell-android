@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/purchase.reply.json",
+  "title": "purchase (native to page)",
+  "description": "Outcome of the purchase sheet. The native app never acknowledges the purchase: the server does after verifying it.",
+  "type": "object",
+  "required": [
+    "result"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "enum": [
+        "purchased",
+        "pending",
+        "canceled",
+        "already_owned",
+        "unavailable",
+        "error"
+      ],
+      "description": "purchased: Purchase.PurchaseState.PURCHASED. pending: PurchaseState.PENDING (e.g. cash payment). canceled: USER_CANCELED. already_owned: ITEM_ALREADY_OWNED. unavailable: BILLING_UNAVAILABLE, SERVICE_UNAVAILABLE or FEATURE_NOT_SUPPORTED. error: anything else."
+    },
+    "productId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Google Play product id (subscription id)."
+    },
+    "purchaseToken": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Purchase.getPurchaseToken()."
+    },
+    "message": {
+      "type": "string",
+      "description": "Developer-facing detail, never shown to the customer."
+    }
+  },
+  "if": {
+    "properties": {
+      "result": {
+        "enum": [
+          "purchased",
+          "pending"
+        ]
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "productId",
+      "purchaseToken"
+    ]
+  }
+}

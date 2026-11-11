@@ -1,0 +1,15 @@
+{
+  "result": "ok",
+  "products": [
+    {
+      "productId": "premium",
+      "basePlanId": "monthly",
+      "formattedPrice": "€4.99"
+    },
+    {
+      "productId": "premium",
+      "basePlanId": "yearly",
+      "formattedPrice": "€49.99"
+    }
+  ]
+}

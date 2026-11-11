@@ -1,0 +1,7 @@
+{
+  "productId": "premium",
+  "basePlanId": "yearly",
+  "obfuscatedAccountId": "6f1c2a8e-3b7d-4e59-9a0c-2d4f8b1e7c35",
+  "oldPurchaseToken": "old-purchase-token",
+  "replacementMode": "CHARGE_PRORATED_PRICE"
+}
