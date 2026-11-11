@@ -14,6 +14,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       # build runs Android lint and ktlint; test runs the unit tests.
       - run: ./gradlew build test

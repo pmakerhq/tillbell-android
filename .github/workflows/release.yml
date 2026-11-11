@@ -17,7 +17,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       # Never publish a version that does not pass the same checks as CI.
       - run: ./gradlew build test
       - run: ./gradlew publish -PreleaseVersion="${GITHUB_REF_NAME#v}"
