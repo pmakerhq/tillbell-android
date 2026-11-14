@@ -8,7 +8,7 @@ hotwire = "1.4.1"
 # Google Play Billing Library.
 billing = "9.1.0"
 coroutines = "1.11.0"
-kotlinxSerialization = "1.12.0"
+kotlinxSerialization = "1.13.0"
 ktlintGradle = "14.2.0"
 junit = "4.13.2"
 # Real org.json implementation for unit tests: Play Billing parses ProductDetails and Purchase with it.
