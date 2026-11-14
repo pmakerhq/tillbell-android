@@ -12,8 +12,11 @@ import dev.hotwire.navigation.destinations.HotwireDestination
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import java.net.URI
+import java.net.URISyntaxException
 
 /**
  * The `tillbell` Hotwire Native bridge component: runs the Google Play subscription purchase
@@ -43,6 +46,10 @@ public class TillbellComponent(
         val fragment = delegate.destination.fragment
         val billing = TillbellBilling.shared(fragment.requireContext())
         if (message.event == "manage") {
+            if (!isTrusted(message.jsonData, allowedHosts)) {
+                Log.w(NAME, "Ignoring manage from a page outside the allowed hosts")
+                return
+            }
             val productId = decodeOrNull<ManageRequest>(message.jsonData)?.productId
             openPlayStore(billing.manageUrl(productId))
             return
@@ -71,13 +78,54 @@ public class TillbellComponent(
         /** The bridge component name the Tillbell paywall page talks to. */
         public const val NAME: String = "tillbell"
 
+        /**
+         * Hosts of the pages allowed to start a purchase, e.g. `setOf("example.com")`, compared
+         * with the host of the page that sent the message. Messages from any other page (a link
+         * that left your site inside the app) get an `error` reply, and `manage` is ignored.
+         * Null, the default, accepts every page the app shows. Set it in `Application.onCreate`.
+         */
+        @Volatile
+        @JvmStatic
+        public var allowedHosts: Set<String>? = null
+
         // Process-wide, not tied to a screen: a purchase in flight must still complete, and its
         // result reach Play's listener, when the Activity that started it is recreated.
         private val scope = MainScope()
     }
 }
 
-// The bridge adds a `metadata` object to every message from the page; it is ignored.
+// The `metadata` object the bridge adds to every message from the page: the URL of the page.
+@Serializable
+private data class MessageMetadata(
+    val metadata: Metadata,
+) {
+    @Serializable
+    data class Metadata(
+        val url: String,
+    )
+}
+
+/**
+ * True when the page that sent [jsonData] may talk to the store: its `metadata.url`, added by
+ * the bridge, is on one of [allowedHosts] (any page when it is null). A message without a
+ * readable URL is refused once hosts are set.
+ */
+internal fun isTrusted(
+    jsonData: String,
+    allowedHosts: Set<String>?,
+): Boolean {
+    if (allowedHosts == null) return true
+    val url = decodeOrNull<MessageMetadata>(jsonData)?.metadata?.url ?: return false
+    val host =
+        try {
+            URI(url).host
+        } catch (_: URISyntaxException) {
+            null
+        } ?: return false
+    return allowedHosts.any { it.equals(host, ignoreCase = true) }
+}
+
+// Requests ignore the `metadata` object.
 // Encoding uses this instance too, rather than the host app's Hotwire JSON converter, whose
 // settings could add or drop fields the contract's schemas forbid or require.
 internal val contractJson = Json { ignoreUnknownKeys = true }
@@ -90,9 +138,11 @@ internal val contractJson = Json { ignoreUnknownKeys = true }
 internal suspend fun TillbellBilling.answer(
     event: String,
     jsonData: String,
+    allowedHosts: Set<String>? = TillbellComponent.allowedHosts,
     activity: () -> Activity?,
-): String? =
-    try {
+): String? {
+    if (!isTrusted(jsonData, allowedHosts)) return errorReply(event, "The page is not on an allowed host")
+    return try {
         when (event) {
             "products" -> {
                 val reply =
@@ -115,6 +165,7 @@ internal suspend fun TillbellBilling.answer(
         // For example a Play Billing builder rejecting its input: still answer the page.
         errorReply(event, e.message ?: e.javaClass.name)
     }
+}
 
 private fun errorReply(
     event: String,

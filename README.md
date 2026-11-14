@@ -76,11 +76,14 @@ Hotwire.registerBridgeComponents(
     BridgeComponentFactory("external-offer", ::ExternalOfferComponent), // your own components
     BridgeComponentFactory(TillbellComponent.NAME, ::TillbellComponent),
 )
+TillbellComponent.allowedHosts = setOf("example.com") // the host of your Rails app
 ```
 
 That is all the native setup there is. Registering the component is what enables the paywall: Hotwire Native lists `tillbell` in the app's user agent, and the page only connects its controller when it finds it. Without it, the paywall shows its fallback and never sends a message.
 
 The component coexists with any other bridge component, and with other Play Billing clients in the same app: it creates its own `BillingClient`.
+
+`allowedHosts` limits the purchase flow to your own pages: a message from a page on another host (a link that left your site inside the app) gets an `error` reply, and `manage` is ignored. It is compared with the URL the bridge adds to every message. Leave it null to accept every page the app shows.
 
 ## How it behaves
 
