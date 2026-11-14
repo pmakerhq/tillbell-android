@@ -82,6 +82,8 @@ That is all the native setup there is. Registering the component is what enables
 
 The component coexists with any other bridge component, and with other Play Billing clients in the same app: it creates its own `BillingClient`.
 
+Only your own pages can start a purchase: Hotwire Native (1.4 and later, which Tillbell requires) drops bridge messages from frames and from origins its `originTrustPolicy` does not trust, by default those of your start locations. If you widen that policy, every origin you add can use the paywall.
+
 ## How it behaves
 
 - **The server decides.** The component reports what Google Play says and nothing else. It never acknowledges a purchase (the server does, after verifying it) and never derives an identifier on the device: `obfuscatedAccountId` is passed to Play unchanged, and no obfuscated profile id is set.
