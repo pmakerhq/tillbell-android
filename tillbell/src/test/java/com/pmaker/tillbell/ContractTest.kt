@@ -56,6 +56,18 @@ class ContractTest {
         )
         assertEquals(ManageRequest("premium"), contractJson.decodeFromString<ManageRequest>(resource("examples/manage.request.json")))
         assertEquals(ManageRequest(null), contractJson.decodeFromString<ManageRequest>("""{"productId":null}"""))
+        assertEquals(
+            ExternalOfferRequest(ExternalOfferAction.AVAILABILITY),
+            contractJson.decodeFromString<ExternalOfferRequest>(resource("examples/externalOffer.request.availability.json")),
+        )
+        assertEquals(
+            ExternalOfferRequest(ExternalOfferAction.TOKEN),
+            contractJson.decodeFromString<ExternalOfferRequest>(resource("examples/externalOffer.request.token.json")),
+        )
+        assertEquals(
+            ExternalOfferRequest(ExternalOfferAction.LAUNCH, "https://example.com/checkout/cs_test_a1b2c3"),
+            contractJson.decodeFromString<ExternalOfferRequest>(resource("examples/externalOffer.request.launch.json")),
+        )
     }
 
     @Test
@@ -220,6 +232,61 @@ class ContractTest {
 
             assertValid("restore.reply.json", reply)
             assertSameJson("""{"result":"error","message":"rejected by Play"}""", reply)
+
+            val offer = answer("externalOffer", resource("examples/externalOffer.request.availability.json"))
+
+            assertValid("externalOffer.reply.json", offer)
+            assertSameJson("""{"result":"error","message":"rejected by Play"}""", offer)
+        }
+
+    // externalOffer
+
+    @Test
+    fun `externalOffer replies match the contract examples`() =
+        runTest {
+            client.externalOfferTokenResults += billingResult(BillingResponseCode.OK) to "external-transaction-token"
+            client.externalOfferLaunchResults += billingResult(BillingResponseCode.USER_CANCELED)
+            client.externalOfferAvailabilityResults += billingResult(BillingResponseCode.OK)
+            client.externalOfferAvailabilityResults += billingResult(BillingResponseCode.BILLING_UNAVAILABLE)
+
+            val replies =
+                mapOf(
+                    "ok" to answer("externalOffer", resource("examples/externalOffer.request.availability.json")),
+                    "token" to answer("externalOffer", resource("examples/externalOffer.request.token.json")),
+                    "canceled" to answer("externalOffer", resource("examples/externalOffer.request.launch.json")),
+                    "unavailable" to answer("externalOffer", resource("examples/externalOffer.request.availability.json")),
+                )
+
+            for ((example, reply) in replies) {
+                assertValid("externalOffer.reply.json", reply)
+                assertSameJson(resource("examples/externalOffer.reply.$example.json"), reply)
+            }
+        }
+
+    @Test
+    fun `externalOffer errors and malformed requests validate`() =
+        runTest {
+            client.externalOfferTokenResults += billingResult(BillingResponseCode.OK) to null
+            client.externalOfferAvailabilityResults += billingResult(BillingResponseCode.NETWORK_ERROR, "offline")
+
+            val replies =
+                listOf(
+                    answer("externalOffer", """{"action":"token"}"""),
+                    answer("externalOffer", """{"action":"availability"}"""),
+                    answer("externalOffer", """{"action":"launch"}"""),
+                    answer("externalOffer", """{"action":"launch","url":"http://example.com"}"""),
+                    answer("externalOffer", """{"action":"token","url":"https://example.com"}"""),
+                    answer("externalOffer", """{"action":"buy"}"""),
+                    answer("externalOffer", "{}"),
+                    answer("externalOffer", "not json"),
+                    billing.answer("externalOffer", resource("examples/externalOffer.request.launch.json"), activity = { null })!!,
+                )
+
+            replies.forEach {
+                assertValid("externalOffer.reply.json", it)
+                assertTrue(it, it.contains("\"result\":\"error\""))
+            }
+            assertTrue(client.launchedExternalOffers.isEmpty())
         }
 
     // Helpers

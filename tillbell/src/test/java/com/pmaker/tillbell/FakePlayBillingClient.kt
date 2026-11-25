@@ -19,17 +19,22 @@ internal class FakePlayBillingClient : PlayBillingClient {
     val productDetailsResults = ArrayDeque<Pair<BillingResult, List<ProductDetails>>>()
     val purchasesResults = ArrayDeque<Pair<BillingResult, List<Purchase>>>()
     val launchResults = ArrayDeque<BillingResult>()
+    val externalOfferAvailabilityResults = ArrayDeque<BillingResult>()
+    val externalOfferTokenResults = ArrayDeque<Pair<BillingResult, String?>>()
+    val externalOfferLaunchResults = ArrayDeque<BillingResult>()
 
     /** When set, connect() suspends until it completes, like a slow first connection. */
     var connectGate: CompletableDeferred<Unit>? = null
 
-    /** When set, queryPurchases() throws it, like a Play builder rejecting its input. */
+    /** When set, queryPurchases() and isExternalOfferAvailable() throw it, like a Play builder rejecting its input. */
     var failure: RuntimeException? = null
 
     var connectCalls = 0
     val queriedProductIds = mutableListOf<List<String>>()
     var purchasesQueries = 0
     val launchedFlows = mutableListOf<BillingFlow>()
+    var externalOfferAvailabilityChecks = 0
+    val launchedExternalOffers = mutableListOf<String>()
 
     override suspend fun connect(): BillingResult {
         connectCalls++
@@ -58,6 +63,26 @@ internal class FakePlayBillingClient : PlayBillingClient {
     ): BillingResult {
         launchedFlows += flow
         return track(launchResults.removeFirstOrNull() ?: ok)
+    }
+
+    override suspend fun isExternalOfferAvailable(): BillingResult {
+        externalOfferAvailabilityChecks++
+        failure?.let { throw it }
+        return track(externalOfferAvailabilityResults.removeFirstOrNull() ?: ok)
+    }
+
+    override suspend fun createExternalOfferToken(): Pair<BillingResult, String?> {
+        val result = externalOfferTokenResults.removeFirstOrNull() ?: (ok to "external-transaction-token")
+        track(result.first)
+        return result
+    }
+
+    override suspend fun launchExternalOffer(
+        activity: Activity,
+        url: String,
+    ): BillingResult {
+        launchedExternalOffers += url
+        return track(externalOfferLaunchResults.removeFirstOrNull() ?: ok)
     }
 
     private fun track(result: BillingResult): BillingResult {

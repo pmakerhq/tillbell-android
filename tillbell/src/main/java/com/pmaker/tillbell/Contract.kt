@@ -129,3 +129,50 @@ internal data class RestoreReply(
 internal data class ManageRequest(
     val productId: String? = null,
 )
+
+/** Step of a Google Play external offer, sent by the page in an `externalOffer` request. */
+@Serializable
+internal enum class ExternalOfferAction {
+    /** Whether the device and the customer's country may use external offers. */
+    @SerialName("availability")
+    AVAILABILITY,
+
+    /** A fresh external transaction token, for the server to report the payment with. */
+    @SerialName("token")
+    TOKEN,
+
+    /** Opens the web checkout at the request's url, after Google's information screen. */
+    @SerialName("launch")
+    LAUNCH,
+}
+
+/** `externalOffer` request. [url] is the https web checkout, for [ExternalOfferAction.LAUNCH] only. */
+@Serializable
+internal data class ExternalOfferRequest(
+    val action: ExternalOfferAction,
+    val url: String? = null,
+)
+
+/** Result of `externalOffer`. */
+@Serializable
+internal enum class ExternalOfferResult {
+    @SerialName("ok")
+    OK,
+
+    @SerialName("unavailable")
+    UNAVAILABLE,
+
+    @SerialName("canceled")
+    CANCELED,
+
+    @SerialName("error")
+    ERROR,
+}
+
+/** `externalOffer` reply. [externalTransactionToken] is set for an OK token reply only. */
+@Serializable
+internal data class ExternalOfferReply(
+    val result: ExternalOfferResult,
+    val externalTransactionToken: String? = null,
+    val message: String? = null,
+)

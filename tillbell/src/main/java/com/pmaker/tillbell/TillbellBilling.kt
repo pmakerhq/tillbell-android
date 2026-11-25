@@ -117,6 +117,45 @@ internal class TillbellBilling(
         return RestoreReply(QueryResult.OK, purchases = owned)
     }
 
+    /**
+     * Runs one step of a Google Play external offer. Every call returns exactly one reply.
+     * [activity] is read just before the launch, like for [purchase].
+     */
+    suspend fun externalOffer(
+        activity: () -> Activity?,
+        request: ExternalOfferRequest,
+    ): ExternalOfferReply {
+        // As the contract's schema says: only launch takes a url.
+        if (request.action != ExternalOfferAction.LAUNCH && request.url != null) {
+            return ExternalOfferReply(ExternalOfferResult.ERROR, message = "url is for launch only")
+        }
+
+        return when (request.action) {
+            ExternalOfferAction.AVAILABILITY -> {
+                val (result, _) = withConnection { client.isExternalOfferAvailable() to Unit }
+                externalOfferReply(result)
+            }
+            ExternalOfferAction.TOKEN -> {
+                val (result, token) = withConnection { client.createExternalOfferToken() }
+                when {
+                    result.responseCode != BillingResponseCode.OK -> externalOfferReply(result)
+                    token.isNullOrEmpty() -> ExternalOfferReply(ExternalOfferResult.ERROR, message = "Google Play returned no token")
+                    else -> ExternalOfferReply(ExternalOfferResult.OK, externalTransactionToken = token)
+                }
+            }
+            ExternalOfferAction.LAUNCH -> {
+                // Only https links, as the contract's schema says: never hand Play anything else.
+                val url =
+                    request.url?.takeIf { it.startsWith("https://") }
+                        ?: return ExternalOfferReply(ExternalOfferResult.ERROR, message = "launch needs an https url")
+                val currentActivity =
+                    activity() ?: return ExternalOfferReply(ExternalOfferResult.ERROR, message = "No activity to launch the offer from")
+                val (result, _) = withConnection { client.launchExternalOffer(currentActivity, url) to Unit }
+                externalOfferReply(result)
+            }
+        }
+    }
+
     /** The Play Store page where the customer manages one subscription, or all of them. */
     fun manageUrl(productId: String?): String {
         val page = "https://play.google.com/store/account/subscriptions"
@@ -251,6 +290,17 @@ private fun failedPurchase(result: BillingResult): PurchaseReply =
         BillingResponseCode.FEATURE_NOT_SUPPORTED,
         -> PurchaseReply(PurchaseResult.UNAVAILABLE, message = describe(result))
         else -> PurchaseReply(PurchaseResult.ERROR, message = describe(result))
+    }
+
+// The reply to an external offer step without a token: OK, or the failure Play reported.
+private fun externalOfferReply(result: BillingResult): ExternalOfferReply =
+    when (result.responseCode) {
+        BillingResponseCode.OK -> ExternalOfferReply(ExternalOfferResult.OK)
+        BillingResponseCode.USER_CANCELED -> ExternalOfferReply(ExternalOfferResult.CANCELED)
+        BillingResponseCode.BILLING_UNAVAILABLE,
+        BillingResponseCode.FEATURE_NOT_SUPPORTED,
+        -> ExternalOfferReply(ExternalOfferResult.UNAVAILABLE, message = describe(result))
+        else -> ExternalOfferReply(ExternalOfferResult.ERROR, message = describe(result))
     }
 
 // The contract reserves "unavailable" for products and restore to BILLING_UNAVAILABLE.

@@ -27,8 +27,8 @@ import kotlinx.serialization.json.Json
  * )
  * ```
  *
- * It answers the page's `products`, `purchase` and `restore` messages, always, including on
- * errors, and opens the Play subscriptions page on `manage`. It reports what Google Play says
+ * It answers the page's `products`, `purchase`, `restore` and `externalOffer` messages, always,
+ * including on errors, and opens the Play subscriptions page on `manage`. It reports what Google Play says
  * and never acknowledges a purchase: the server verifies and acknowledges it.
  *
  * @param name The component name Hotwire registers it under; use [NAME].
@@ -83,9 +83,10 @@ public class TillbellComponent(
 internal val contractJson = Json { ignoreUnknownKeys = true }
 
 /**
- * The JSON reply to a `products`, `purchase` or `restore` message, or null for messages that
- * get no reply. Malformed requests and unexpected failures get an `error` reply, so the page
- * never waits forever. [activity] is the Activity to show the purchase sheet on, if any.
+ * The JSON reply to a `products`, `purchase`, `restore` or `externalOffer` message, or null for
+ * messages that get no reply. Malformed requests and unexpected failures get an `error` reply,
+ * so the page never waits forever. [activity] is the Activity to show the purchase sheet or
+ * Google's external offer screen on, if any.
  */
 internal suspend fun TillbellBilling.answer(
     event: String,
@@ -107,6 +108,12 @@ internal suspend fun TillbellBilling.answer(
                 contractJson.encodeToString(reply)
             }
             "restore" -> contractJson.encodeToString(restore())
+            "externalOffer" -> {
+                val reply =
+                    decodeOrNull<ExternalOfferRequest>(jsonData)?.let { externalOffer(activity, it) }
+                        ?: ExternalOfferReply(ExternalOfferResult.ERROR, message = "Malformed externalOffer request")
+                contractJson.encodeToString(reply)
+            }
             else -> null
         }
     } catch (e: CancellationException) {
@@ -124,6 +131,7 @@ private fun errorReply(
         "products" -> contractJson.encodeToString(ProductsReply(QueryResult.ERROR, message = message))
         "purchase" -> contractJson.encodeToString(PurchaseReply(PurchaseResult.ERROR, message = message))
         "restore" -> contractJson.encodeToString(RestoreReply(QueryResult.ERROR, message = message))
+        "externalOffer" -> contractJson.encodeToString(ExternalOfferReply(ExternalOfferResult.ERROR, message = message))
         else -> null
     }
 

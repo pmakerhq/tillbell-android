@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/externalOffer.reply.json",
+  "title": "externalOffer (native to page)",
+  "description": "Outcome of an externalOffer step. A token reply that is ok carries the token the server reports the payment with.",
+  "type": "object",
+  "required": [
+    "result"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "enum": [
+        "ok",
+        "unavailable",
+        "canceled",
+        "error"
+      ],
+      "description": "unavailable: external offers cannot be used on this device or in this country (BILLING_UNAVAILABLE, FEATURE_NOT_SUPPORTED), or the app is not on Google Play. canceled: the customer left Google's information screen."
+    },
+    "externalTransactionToken": {
+      "type": "string",
+      "minLength": 1,
+      "description": "externalTransactionToken of the BillingProgramReportingDetails, for an ok token reply only."
+    },
+    "message": {
+      "type": "string",
+      "description": "Developer-facing detail, never shown to the customer."
+    }
+  },
+  "if": {
+    "properties": {
+      "result": {
+        "not": {
+          "const": "ok"
+        }
+      }
+    }
+  },
+  "then": {
+    "not": {
+      "required": [
+        "externalTransactionToken"
+      ]
+    }
+  }
+}
