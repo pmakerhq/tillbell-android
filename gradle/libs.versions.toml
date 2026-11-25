@@ -10,6 +10,8 @@ billing = "9.1.0"
 coroutines = "1.11.0"
 kotlinxSerialization = "1.13.0"
 ktlintGradle = "14.2.0"
+# Publishes to Maven Central through the Central Portal API, and signs the artifacts.
+mavenPublish = "0.37.0"
 junit = "4.13.2"
 # Real org.json implementation for unit tests: Play Billing parses ProductDetails and Purchase with it.
 orgJson = "20260814"
@@ -32,3 +34,4 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }

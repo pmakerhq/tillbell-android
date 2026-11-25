@@ -1,6 +1,6 @@
 name: Release
 
-# Pushing a tag vX.Y.Z publishes com.pmaker:tillbell:X.Y.Z to GitHub Packages.
+# Pushing a tag vX.Y.Z publishes dev.pmaker:tillbell:X.Y.Z to Maven Central.
 on:
   push:
     tags: ["v*"]
@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -22,6 +21,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       # Never publish a version that does not pass the same checks as CI.
       - run: ./gradlew build test
-      - run: ./gradlew publish -PreleaseVersion="${GITHUB_REF_NAME#v}"
+      # Signs, uploads to the Central Portal and releases once the deployment is validated.
+      - run: ./gradlew publishAndReleaseToMavenCentral -PreleaseVersion="${GITHUB_REF_NAME#v}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}

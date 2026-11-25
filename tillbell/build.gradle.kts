@@ -2,10 +2,10 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktlint)
-    `maven-publish`
+    alias(libs.plugins.maven.publish)
 }
 
-group = "com.pmaker"
+group = "dev.pmaker"
 // Set by the release workflow from the tag (v0.1.0 publishes 0.1.0).
 version = providers.gradleProperty("releaseVersion").getOrElse("0.0.0-SNAPSHOT")
 
@@ -36,12 +36,6 @@ android {
         // Dependabot proposes the upgrades instead.
         disable += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
     }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
-    }
 }
 
 kotlin {
@@ -70,42 +64,32 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
 }
 
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            artifactId = "tillbell"
-            afterEvaluate { from(components["release"]) }
-            pom {
-                name = "Tillbell"
-                description = "Hotwire Native bridge component for Google Play Billing"
-                url = "https://github.com/pmakerhq/tillbell-android"
-                licenses {
-                    license {
-                        name = "MIT License"
-                        url = "https://opensource.org/licenses/MIT"
-                    }
-                }
-                developers {
-                    developer {
-                        id = "pmakerhq"
-                        name = "pmakerhq"
-                    }
-                }
-                scm {
-                    url = "https://github.com/pmakerhq/tillbell-android"
-                    connection = "scm:git:https://github.com/pmakerhq/tillbell-android.git"
-                }
+// Publishes the release variant with a sources jar and a javadoc jar, signed, to Maven Central.
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(artifactId = "tillbell")
+    pom {
+        name = "Tillbell"
+        description = "Hotwire Native bridge component for Google Play Billing"
+        url = "https://github.com/pmakerhq/tillbell-android"
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://opensource.org/licenses/MIT"
             }
         }
-    }
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/pmakerhq/tillbell-android")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+        developers {
+            developer {
+                id = "pmakerhq"
+                name = "pmakerhq"
+                url = "https://github.com/pmakerhq"
             }
+        }
+        scm {
+            url = "https://github.com/pmakerhq/tillbell-android"
+            connection = "scm:git:https://github.com/pmakerhq/tillbell-android.git"
+            developerConnection = "scm:git:ssh://git@github.com/pmakerhq/tillbell-android.git"
         }
     }
 }

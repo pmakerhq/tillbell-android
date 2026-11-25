@@ -33,38 +33,19 @@ The library itself is built with Gradle 9.9.1, the Android Gradle Plugin 9.5.1 (
 
 ## Installation
 
-Tillbell is published to [GitHub Packages](https://github.com/pmakerhq/tillbell-android/packages) as `com.pmaker:tillbell`. GitHub Packages asks for a token even to read, so add the repository with credentials in your app's `settings.gradle.kts`:
-
-```kotlin
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven {
-            url = uri("https://maven.pkg.github.com/pmakerhq/tillbell-android")
-            credentials {
-                username = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-                password = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
-            }
-            content { includeGroup("com.pmaker") }
-        }
-    }
-}
-```
-
-Locally, put `gpr.user` (your GitHub login) and `gpr.key` (a personal access token with the `read:packages` scope) in `~/.gradle/gradle.properties`. In GitHub Actions, the `GITHUB_TOKEN` of another repository cannot read this package: the Maven registry only has repository-scoped permissions. Store a classic personal access token with `read:packages` as a secret and pass it to Gradle as `GITHUB_TOKEN`.
-
-Then, in your app module's `build.gradle.kts`:
+Tillbell is published to Maven Central as `dev.pmaker:tillbell`. With `mavenCentral()` in your repositories, add to your app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.pmaker:tillbell:0.1.3")
+    implementation("dev.pmaker:tillbell:0.2.0")
 }
 ```
 
+Versions up to 0.1.4 were published as `com.pmaker:tillbell` on [GitHub Packages](https://github.com/pmakerhq/tillbell-android/packages), which needs a token with `read:packages` even to read. They stay there, but new versions are only on Maven Central: switch to the new coordinates and remove the GitHub Packages repository from `settings.gradle.kts`. The Kotlin package `com.pmaker.tillbell` does not change.
+
 ### Releasing
 
-Push a `vX.Y.Z` tag: the [release workflow](.github/workflows/release.yml) runs the checks and publishes version `X.Y.Z`. A published version cannot be overwritten, so a fix ships as a new tag.
+Push a `vX.Y.Z` tag: the [release workflow](.github/workflows/release.yml) runs the checks, signs the artifacts and publishes version `X.Y.Z` to Maven Central through the Central Portal. It needs the repository secrets `MAVEN_CENTRAL_USERNAME` and `MAVEN_CENTRAL_PASSWORD` (a Central Portal user token), `SIGNING_KEY` (an ASCII-armored GPG private key) and `SIGNING_KEY_PASSWORD`. A published version cannot be overwritten, so a fix ships as a new tag.
 
 ## Registration
 
