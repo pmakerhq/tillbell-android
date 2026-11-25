@@ -31,6 +31,10 @@ android {
     lint {
         warningsAsErrors = true
         abortOnError = true
+        // "A newer version is available" depends on the day the build runs, not on the code: it
+        // turns CI red whenever Google announces a release (even before it is downloadable).
+        // Dependabot proposes the upgrades instead.
+        disable += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
     }
 
     publishing {

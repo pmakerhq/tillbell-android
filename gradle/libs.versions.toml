@@ -1,6 +1,6 @@
 [versions]
 # Android Gradle Plugin 9 compiles Kotlin itself (built-in Kotlin), so there is no Kotlin Android plugin.
-agp = "9.5.1"
+agp = "9.5.2"
 # Kotlin Gradle Plugin version used by the built-in Kotlin support and the serialization plugin.
 kotlin = "2.4.21"
 # Hotwire Native Android. Its core artifact sets the minimum SDK of this library (28).
