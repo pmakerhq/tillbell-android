@@ -2,13 +2,18 @@ package com.pmaker.tillbell
 
 import android.app.Activity
 import android.content.Context
+import androidx.core.net.toUri
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClient.BillingProgram
 import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingFlowParams.SubscriptionUpdateParams
+import com.android.billingclient.api.BillingProgramReportingDetailsParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.EnableBillingProgramParams
+import com.android.billingclient.api.LaunchExternalLinkParams
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
@@ -39,6 +44,18 @@ internal interface PlayBillingClient {
     fun launchBillingFlow(
         activity: Activity,
         flow: BillingFlow,
+    ): BillingResult
+
+    /** Whether the external offers program is available to this device and customer. */
+    suspend fun isExternalOfferAvailable(): BillingResult
+
+    /** Creates a fresh external transaction token for an external offer; null when Play gives none. */
+    suspend fun createExternalOfferToken(): Pair<BillingResult, String?>
+
+    /** Shows Google's information screen, then lets Play open [url] outside the app. */
+    suspend fun launchExternalOffer(
+        activity: Activity,
+        url: String,
     ): BillingResult
 }
 
@@ -74,6 +91,15 @@ internal class GooglePlayBillingClient(
                     .newBuilder()
                     .enableOneTimeProducts()
                     .enablePrepaidPlans()
+                    .build(),
+            )
+            // Required by the external offer calls. In Billing 9.1.0 it only records the program
+            // on the builder (it relaxes the purchases listener check, which is set anyway), so
+            // apps not enrolled in the program behave as before: the calls report unavailable.
+            .enableBillingProgram(
+                EnableBillingProgramParams
+                    .newBuilder()
+                    .setBillingProgram(BillingProgram.EXTERNAL_OFFER)
                     .build(),
             ).build()
 
@@ -152,5 +178,40 @@ internal class GooglePlayBillingClient(
             )
         }
         return client.launchBillingFlow(activity, params.build())
+    }
+
+    override suspend fun isExternalOfferAvailable(): BillingResult =
+        suspendCancellableCoroutine { continuation ->
+            client.isBillingProgramAvailableAsync(BillingProgram.EXTERNAL_OFFER) { result, _ -> continuation.resume(result) }
+        }
+
+    override suspend fun createExternalOfferToken(): Pair<BillingResult, String?> {
+        val params = BillingProgramReportingDetailsParams.newBuilder().setBillingProgram(BillingProgram.EXTERNAL_OFFER).build()
+        return suspendCancellableCoroutine { continuation ->
+            client.createBillingProgramReportingDetailsAsync(params) { result, details ->
+                // Play passes no details when the call fails.
+                continuation.resume(result to details?.externalTransactionToken)
+            }
+        }
+    }
+
+    override suspend fun launchExternalOffer(
+        activity: Activity,
+        url: String,
+    ): BillingResult {
+        // Play shows its information screen and opens the link itself, as the program requires.
+        val params =
+            LaunchExternalLinkParams
+                .newBuilder()
+                .setBillingProgram(BillingProgram.EXTERNAL_OFFER)
+                .setLinkType(LaunchExternalLinkParams.LinkType.LINK_TO_DIGITAL_CONTENT_OFFER)
+                .setLaunchMode(LaunchExternalLinkParams.LaunchMode.LAUNCH_IN_EXTERNAL_BROWSER_OR_APP)
+                .setLinkUri(url.toUri())
+                .build()
+        return suspendCancellableCoroutine { continuation ->
+            client.launchExternalLink(activity, params) { result ->
+                if (continuation.isActive) continuation.resume(result)
+            }
+        }
     }
 }

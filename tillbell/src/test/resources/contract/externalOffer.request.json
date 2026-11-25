@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pmakerhq/tillbell-rails/blob/main/contract/externalOffer.request.json",
+  "title": "externalOffer (page to native)",
+  "description": "One step of a Google Play external offer (EEA): whether the device may use it, a fresh reporting token, or opening the web checkout after Google's information screen.",
+  "type": "object",
+  "required": [
+    "action"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "availability",
+        "token",
+        "launch"
+      ],
+      "description": "availability: isBillingProgramAvailable. token: createBillingProgramReportingDetails. launch: launchExternalLink with url."
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https://",
+      "description": "The web checkout to open, for launch only."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Added by @hotwired/hotwire-native-bridge to every message sent by the page.",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "action": {
+        "const": "launch"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "url"
+    ]
+  },
+  "else": {
+    "not": {
+      "required": [
+        "url"
+      ]
+    }
+  }
+}

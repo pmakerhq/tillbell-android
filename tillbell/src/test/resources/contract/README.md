@@ -6,6 +6,10 @@ JSON Schemas (draft 2020-12) and examples of the Tillbell bridge contract, copie
 `38401d9980504ec4e11d65cdd149cee7e89a29c9` (pull request pmakerhq/tillbell-rails#10), where it
 was first copied from.
 
+The `externalOffer` schemas and examples (`externalOffer.*.json`) are newer: they were copied
+from the tillbell-rails working tree that adds the `externalOffer` message, before its release.
+Record the tillbell-rails release that ships them here once it is tagged.
+
 The unit tests validate every reply the component builds against these schemas. To update the
 contract, copy the `contract/` directory of a newer tillbell-rails release here and update the
 version above.

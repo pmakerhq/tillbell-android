@@ -469,6 +469,134 @@ class TillbellBillingTest {
             assertEquals(RestoreReply(QueryResult.ERROR, message = "ERROR"), billing.restore())
         }
 
+    // External offers
+
+    private fun offer(
+        action: ExternalOfferAction,
+        url: String? = null,
+    ) = ExternalOfferRequest(action, url)
+
+    @Test
+    fun `each Play response code maps to exactly one external offer result`() =
+        runTest {
+            val expected =
+                mapOf(
+                    BillingResponseCode.OK to ExternalOfferResult.OK,
+                    BillingResponseCode.USER_CANCELED to ExternalOfferResult.CANCELED,
+                    BillingResponseCode.BILLING_UNAVAILABLE to ExternalOfferResult.UNAVAILABLE,
+                    BillingResponseCode.FEATURE_NOT_SUPPORTED to ExternalOfferResult.UNAVAILABLE,
+                    BillingResponseCode.SERVICE_UNAVAILABLE to ExternalOfferResult.ERROR,
+                    BillingResponseCode.DEVELOPER_ERROR to ExternalOfferResult.ERROR,
+                    BillingResponseCode.ERROR to ExternalOfferResult.ERROR,
+                    BillingResponseCode.NETWORK_ERROR to ExternalOfferResult.ERROR,
+                )
+            for ((code, result) in expected) {
+                client.externalOfferAvailabilityResults += billingResult(code)
+                client.externalOfferLaunchResults += billingResult(code)
+
+                val available = billing.externalOffer({ activity }, offer(ExternalOfferAction.AVAILABILITY))
+                val launched = billing.externalOffer({ activity }, offer(ExternalOfferAction.LAUNCH, "https://example.com/checkout"))
+
+                assertEquals("availability, response code $code", result, available.result)
+                assertEquals("launch, response code $code", result, launched.result)
+            }
+        }
+
+    @Test
+    fun `availability replies ok, or unavailable with Play's reason`() =
+        runTest {
+            client.externalOfferAvailabilityResults += billingResult(BillingResponseCode.OK)
+            client.externalOfferAvailabilityResults += billingResult(BillingResponseCode.BILLING_UNAVAILABLE, "not in the EEA")
+
+            assertEquals(
+                ExternalOfferReply(ExternalOfferResult.OK),
+                billing.externalOffer({ null }, offer(ExternalOfferAction.AVAILABILITY)),
+            )
+            assertEquals(
+                ExternalOfferReply(ExternalOfferResult.UNAVAILABLE, message = "BILLING_UNAVAILABLE: not in the EEA"),
+                billing.externalOffer({ null }, offer(ExternalOfferAction.AVAILABILITY)),
+            )
+        }
+
+    @Test
+    fun `token replies the external transaction token`() =
+        runTest {
+            client.externalOfferTokenResults += billingResult(BillingResponseCode.OK) to "token-1"
+
+            val reply = billing.externalOffer({ null }, offer(ExternalOfferAction.TOKEN))
+
+            assertEquals(ExternalOfferReply(ExternalOfferResult.OK, externalTransactionToken = "token-1"), reply)
+        }
+
+    @Test
+    fun `token ok without a token is an error, and failures carry no token`() =
+        runTest {
+            client.externalOfferTokenResults += billingResult(BillingResponseCode.OK) to null
+            client.externalOfferTokenResults += billingResult(BillingResponseCode.OK) to ""
+            client.externalOfferTokenResults += billingResult(BillingResponseCode.FEATURE_NOT_SUPPORTED) to null
+            client.externalOfferTokenResults += billingResult(BillingResponseCode.ERROR) to "ignored"
+
+            val replies = List(4) { billing.externalOffer({ null }, offer(ExternalOfferAction.TOKEN)) }
+
+            assertEquals(
+                listOf(ExternalOfferResult.ERROR, ExternalOfferResult.ERROR, ExternalOfferResult.UNAVAILABLE, ExternalOfferResult.ERROR),
+                replies.map { it.result },
+            )
+            assertTrue(replies.all { it.externalTransactionToken == null })
+        }
+
+    @Test
+    fun `launch hands the url to Play and replies what it says`() =
+        runTest {
+            client.externalOfferLaunchResults += billingResult(BillingResponseCode.OK)
+            client.externalOfferLaunchResults += billingResult(BillingResponseCode.USER_CANCELED)
+
+            val ok = billing.externalOffer({ activity }, offer(ExternalOfferAction.LAUNCH, "https://example.com/checkout/1"))
+            val canceled = billing.externalOffer({ activity }, offer(ExternalOfferAction.LAUNCH, "https://example.com/checkout/2"))
+
+            assertEquals(ExternalOfferReply(ExternalOfferResult.OK), ok)
+            assertEquals(ExternalOfferReply(ExternalOfferResult.CANCELED), canceled)
+            assertEquals(listOf("https://example.com/checkout/1", "https://example.com/checkout/2"), client.launchedExternalOffers)
+        }
+
+    @Test
+    fun `launch without an https url, or without an activity, is an error and launches nothing`() =
+        runTest {
+            val replies =
+                listOf(
+                    billing.externalOffer({ activity }, offer(ExternalOfferAction.LAUNCH)),
+                    billing.externalOffer({ activity }, offer(ExternalOfferAction.LAUNCH, "http://example.com/checkout")),
+                    billing.externalOffer({ activity }, offer(ExternalOfferAction.LAUNCH, "javascript:alert(1)")),
+                    billing.externalOffer({ null }, offer(ExternalOfferAction.LAUNCH, "https://example.com/checkout")),
+                )
+
+            replies.forEach { assertEquals(ExternalOfferResult.ERROR, it.result) }
+            assertTrue(client.launchedExternalOffers.isEmpty())
+        }
+
+    @Test
+    fun `availability and token with a url are refused before Play is called`() =
+        runTest {
+            val available = billing.externalOffer({ null }, offer(ExternalOfferAction.AVAILABILITY, "https://example.com"))
+            val token = billing.externalOffer({ null }, offer(ExternalOfferAction.TOKEN, "https://example.com"))
+
+            assertEquals(ExternalOfferResult.ERROR, available.result)
+            assertEquals(ExternalOfferResult.ERROR, token.result)
+            assertEquals(0, client.connectCalls)
+        }
+
+    @Test
+    fun `external offer steps reconnect once when the service is disconnected`() =
+        runTest {
+            client.externalOfferAvailabilityResults += billingResult(BillingResponseCode.SERVICE_DISCONNECTED)
+
+            val reply = billing.externalOffer({ null }, offer(ExternalOfferAction.AVAILABILITY))
+
+            assertEquals(ExternalOfferReply(ExternalOfferResult.OK), reply)
+            assertEquals(2, client.connectCalls)
+            assertEquals(2, client.externalOfferAvailabilityChecks)
+        }
+
     // Manage
 
     @Test
